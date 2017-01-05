@@ -14,19 +14,21 @@ using namespace std;
 
 #define BLOCK_SIZE 16
 #define SIZE_KEY 15 //tamaño de la key
-#define SUCCESS 11 //minimo valor de coincidencias a considerar en la key
+#define SUCCESS 13 //minimo valor de coincidencias a considerar en la key
 #define PENALTY -1
 
 long long int M,N;
+
 //probando que un elemento output es el resultado de la suma de su input con 14 posteriores
-void semillero(char *A, char *B, int *out){
+void semillero(char *A, char *B, bool *out){
 	int result;
 	cout<<"tamano cadena A: "<<N<<endl;
 	cout<<"tamano cadena B: "<<M<<endl;
 
     for(long long int j=0; j<N; j=j+1 ){
         result  = 0;
-        //cout<<"j= "<<j<<endl;
+        if(j%100000000==0)
+            cout<<"j= "<<j<<endl;
 
         for (int i = 0 ; i < SIZE_KEY  ; ++i){
             //cout<<"B+i = pos "<<i<<" = "<<*(B+i)<<"  y  "<< "(*(A+j+i)) = pos " << j+i << "  " << (*(A+j+i)) << endl;
@@ -38,15 +40,15 @@ void semillero(char *A, char *B, int *out){
         }
         // Almacena los resultados
         //cout<<"almacenando datos"<<endl;
-        if( result>1 ){
+        if( result>=SUCCESS ){
             //cout<<"result = "<<result<<endl;
             //cout<<"*(out+j) = ";
             //cout<<*(out+j)<<endl;
-            *(out+j)  = result;
+            *(out+j)  = true;
 
-            cout<<"coincidencia en posicion: "<<j<<endl;
+            //cout<<"coincidencia en posicion: "<<j<<endl;
         }else{
-            *(out+j)  = 0;
+            *(out+j)  = false;
         }
 
 
@@ -75,7 +77,7 @@ int findMax(int *traceback, int length, int  &index){
     return max;
 }
 
-void Smith_Waterman_run(char *A, char *B, int n, int *out, int *ind){
+void Smith_Waterman_run(char *A, char *B, int n, bool *out, int *ind){
     if((*out)==0)
         return;
     int matrix[n][n];
@@ -220,7 +222,7 @@ void Smith_Waterman(char *A, char *B, long long int n, int *out, int *ind){
 
 }
 */
-void Smith_Waterman(char *A, char *B, long long int n, int *out, int *ind){
+void Smith_Waterman(char *A, char *B, long long int n, bool *out, int *ind){
     cout<<"Dentro de Smith waterman"<<endl;
 
 
@@ -241,8 +243,9 @@ void Smith_Waterman(char *A, char *B, long long int n, int *out, int *ind){
 
     cout<<"Se crearon variables de inicio"<<endl;
     ///inicializar a 0s la matriz
-    printf ("Iniciando matriz a 0s\n");
+    cout<<"Iniciando matriz a 0s con \n";
     for(int i=0;i<=n;i++){
+
         for(int j=0;j<=n;j++){
             matrix[i][j]=0;
         }
@@ -257,7 +260,7 @@ void Smith_Waterman(char *A, char *B, long long int n, int *out, int *ind){
     //printf ("cadena corta = %d\n",M);
     printf ("Iniciando comparación\n");
     for (long long int k=0;k<N + SIZE_KEY -2 -M; ++k){
-        if(*(out+k)>=SUCCESS){
+        if(*(out+k)==true){
             printf ("Iniciando comparación en posicion %d \n",k);
             for (long long int i=1;i<=n;i++){
                 for(long long int j=0;j<=n;j++){
@@ -315,13 +318,17 @@ void Smith_Waterman(char *A, char *B, long long int n, int *out, int *ind){
                     }
                 }
             }
-            *(ind+k) = matrix_max;
+            //*(ind+k) = matrix_max;
             printf("Maximo escore es: %d \n",matrix_max);
 
         }
     }
 
-
+    for(long long int i = 0; i < n+1; i++)
+    {
+        free (matrix[i]);
+    }
+    free (matrix);
 }
 
 void fill_ints (int *x,int n) {
@@ -351,7 +358,8 @@ int main(void)  {
 	srand(time(NULL)); //Inicia random
 
 	char *A, *B;
-	int *out, *ind; // coincidencias e indice mayor de coincidencias Smith_waterman
+	bool *out;
+	int *ind; // coincidencias e indice mayor de coincidencias Smith_waterman
 
 	/*Codigo para probar cadenas de determinada longitufd*/
 	/*long int sizeA  = (N + SIZE_KEY -1) *sizeof(char);
@@ -402,7 +410,7 @@ int main(void)  {
 
     cout<<"\nArchivo A leido:  " << namefile_a<<"\n";
 
-    ifstream filea("8.fa", std::ifstream::binary);//namefile_a
+    ifstream filea("a.txt", std::ifstream::binary);//namefile_a
     filea.seekg(0,filea.end);///Calcula el tamano del archivo
     long long int size_a = filea.tellg();
     cout<<"tamaño: "<< filea.tellg()<<endl;///Imprime al tamano
@@ -427,7 +435,7 @@ int main(void)  {
 
     cout<<"\n\nArchivo B leido:  " << namefile_b<<"\n";
 
-    ifstream fileb("b.fasta", std::ifstream::binary);//namefile_b
+    ifstream fileb("b.txt", std::ifstream::binary);//namefile_b
     fileb.seekg(0,fileb.end);///Calcula el tamano del archivo
 
 
@@ -468,11 +476,11 @@ int main(void)  {
     N = size_a -1;
     M = size_b -1;// -z;
     cout<<"creando variables  de almacenamiento de resultados"<<endl;
-    long int sizeout  = (size_a -1+ SIZE_KEY) *sizeof(int);
+    long int sizeout  = (size_a -1+ SIZE_KEY) *sizeof(bool);
     cout<<"sizeout = "<< sizeout << endl;
-    out = (int*)malloc(sizeout); //fill_ints(out,  N + SIZE_KEY);
-    long long int sizeind  = (size_a -1 + SIZE_KEY) *sizeof(int);
-    ind = (int*)malloc(sizeind); //fill_ints(ind,  N + SIZE_KEY -1);
+    out = (bool*)malloc(sizeout); //fill_ints(out,  N + SIZE_KEY);
+    //long long int sizeind  = (size_a -1 + SIZE_KEY) *sizeof(int);
+    //ind = (int*)malloc(sizeind); //fill_ints(ind,  N + SIZE_KEY -1);
     if (out==NULL){
         free(fileA);  free(fileB); free(out); free(ind);
         cout<<"No se puede asignar memoria a la variable"<<endl;
@@ -496,8 +504,9 @@ int main(void)  {
 	printf ("Tiempo t: %f seconds.\n", double(t)/double(CLOCKS_PER_SEC));
 
 	//Cleanup
-	free(fileA);  free(fileB); free(out); free(ind);
+	free(fileA);  free(fileB); free(out); //free(ind);
     //free(A);  free(B); free(out); free(ind);
 
 	return 0;
 }
+
